@@ -34,14 +34,13 @@ then
 
 		#create first group if not exist
 		fgroup=$(echo $groupys | awk -F '[,]' '{print $1}')
-		grep "$fgroup" /etc/group >> /dev/null
-
-
+		grep -q "\b$fgroup\b" /etc/group >> /dev/null
 		if [ $? -eq 0 ]; 
 		then
 			echo >> /dev/null
 		else
 			echo >> /dev/null
+			echo "--------------------"
 			sudo groupadd -f "$fgroup"
 		fi
         
@@ -49,8 +48,7 @@ then
 
 		#create secondary group if not exist
 		sgroup=$(echo $groupys | awk -F '[,]' '{print $2}')
-		grep "$sgroup" /etc/group >> /dev/null
-		
+		grep -q "\b$sgroup\b" /etc/group >> /dev/null
 		if [ $? -eq 0 ];
 		then
 			echo >> /dev/null
@@ -64,7 +62,7 @@ then
 		then
 			useradd -d /home/$username -m -s /bin/bash $username
 		else
-			useradd -d /home/username -m -s /bin/bash -G $groups $username
+			useradd -d /home/$username -m -s /bin/bash -G $groupys $username
 		fi
 
 
@@ -74,7 +72,7 @@ then
 
 
 		#seperate groups
-		Groups=$(echo $groupys | awk -F '[,]' '{'print $1,$2'}')
+		Groups=$(echo $groupys | awk -F '[,]' '{print $1.$2}')
 
 		echo "Added user $username, with the password $password, in group(s) $Groups"
 		echo "Added user $username, with the password $password, in group(s) $Groups" >> userLog.txt
@@ -93,20 +91,20 @@ then
 			sudo usermod -a -G $shareGroup $username
 			echo "Folder group is $shareGroup" >> userLog.txt
 		fi
-
 		#create shared folder
 		if [ -d "$folder" ] || [ -z "$folder" ]
 			then echo >> /dev/null
 		else
 			echo >> /dev/null
 			sudo mkdir -m 770 $folder
-			sudo chgrp -R $shareGroup $folder0
+			sudo chgrp -R $shareGroup $folder
 		fi
 
 		#create symbolic link for sudo users 
 		if [ -z "$folder" ]
 		then
 			echo "no shared folder" >> userLog.txtelse
+		else
 			sudo ln -s $folder /home/$username/shared
  		fi
 
@@ -115,11 +113,11 @@ then
  		if getent group sudo | grep -q "\b${username}\b";
  		then
  			echo "User is part of sudo" >> userLog.txt
- 			touch /home/username/.bash_aliases
- 			sudo chown $username /home/$username/ .bash_aliases
- 			sudo chmod 700 /home/$usernmae/ .bash_aliases
+ 			touch /home/$username/.bash_aliases
+ 			sudo chown $username /home/$username/.bash_aliases
+ 			sudo chmod 700 /home/$username/.bash_aliases
 
- 			echo "alias myls='ls -lisa'" >> /home/$username/ .bash_aliases
+ 			echo "alias myls='ls -lisa'" >> /home/$username/.bash_aliases
  			source /home/$username/.bash_aliases
  		else
  			echo "user is not part of sudo" >> userLog.txt
